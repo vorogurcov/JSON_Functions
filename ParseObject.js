@@ -1,42 +1,3 @@
-const isValidJSON = (input) => {
-    if (typeof input !== "string" || input.trim() === "") return false;
-
-    const validateString = (str) => {
-        return /^"([^"\\]|\\["/\\bfnrt]|\\u[0-9a-fA-F]{4})*"$/.test(str);
-    };
-
-    const validateNumber = (num) => {
-        return /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?$/.test(num);
-    };
-
-    const validateValue = (value) => {
-        value = value.trim();
-        if (value === "null" || value === "true" || value === "false") return true;
-        if (validateString(value)) return true;
-        if (validateNumber(value)) return true;
-        if (value.startsWith("{") && value.endsWith("}")) return validateObject(value);
-        if (value.startsWith("[") && value.endsWith("]")) return validateArray(value);
-        return false;
-    };
-
-    const validateObject = (obj) => {
-        obj = obj.trim().slice(1, -1).trim();
-        if (!obj) return true;
-        const pairs = obj.split(/,(?![^{}]*})/);
-        return pairs.every((pair) => {
-            const colonIndex = pair.indexOf(":");
-            if (colonIndex === -1) return false;
-            const key = pair.slice(0, colonIndex).trim();
-            const value = pair.slice(colonIndex + 1).trim();
-            return validateString(key) && validateValue(value);
-        });
-    };
-
-    input = input.trim();
-    if (input.startsWith("{") && input.endsWith("}")) return validateObject(input);
-    return false;
-};
-
 const ParseObject = (json) => {
     const parseArray = (str) => {
         const values = [];
@@ -102,6 +63,9 @@ const ParseObject = (json) => {
 
         throw new Error(`Неизвестный формат значения: ${str}`);
     };
+
+    if(json.startsWith("[") && json.endsWith("]"))
+        return parseArray(json);
 
     const tokens = {};
     let currentKey = null;
@@ -186,5 +150,4 @@ const ParseObject = (json) => {
     return tokens;
 };
 
-
-module.exports = {ParseObject, isValidJSON};
+module.exports = ParseObject;
