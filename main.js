@@ -1,7 +1,30 @@
-let Parse = require("./Parse.js");
+let Parser = require("./Parse.js");
 let stringify = require("./stringify.js");
+const ValidateAndParse = (JSONstr) => {
 
-let json = '{"name":"John", "age":30, "city":"New York"}'
-let json2 = ' {"array":"IVA","json":{"name":"John", "age":30, "address":{"city":"New York", "country":"USA"}},"name":"John", "age":30, "address":{"city":"New York", "country":"USA"}}'
+    try{
+        if(Parser.isValidJSON(JSONstr) == true)
+            console.log( Parser.ParseObject(JSONstr));
+        else {
+            throw new Error("JSON is not valid JSON!");
+        }
+    }
+    catch (ValueError) {
+        console.log(ValueError.message);
+    }
+}
 
-console.log(Parse(json2));
+
+let json1 = '{"name":"John", "age":30, "city":"New York","array":"arr"}'
+console.log(Parser.ParseObject(json1),"\n");
+ValidateAndParse(json1)
+
+console.log("--------------------------------------------");
+let json2 = '{"json":{"value":39,"key":123}, "name":"Andrei"}'
+console.log(Parser.ParseObject(json2),"\n")
+ValidateAndParse(json2)
+
+console.log("--------------------------------------------");
+let json3 = "{\"array\":\"IVA\",\"json\":{\"name\":\"John\", \"age\":30, \"address\":{\"city\":\"New York\",\"country\":\"USA\"}},\"name\":\"John\", \"age\":30,\"address\":{\"city\":\"New York\", \"country\":\"USA\"}}";
+console.log(Parser.ParseObject(json3),"\n")
+ValidateAndParse(json3)
