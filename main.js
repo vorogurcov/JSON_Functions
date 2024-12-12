@@ -15,7 +15,7 @@ const ValidateAndParse = (JSONstr) => {
 }
 
 
-let json1 = '{"name":"John", "age":30, "city":"New York","array":"arr"}';
+let json1 = '{"array":[1,2,3,4],"name":"John", "age":30, "city":"New York"}';
 console.log(Parser.ParseObject(json1),"\n");
 ValidateAndParse(json1);
 
@@ -25,7 +25,7 @@ console.log(Parser.ParseObject(json2),"\n");
 ValidateAndParse(json2);
 
 console.log("--------------------------------------------");
-let json3 = "{\"array\":\"IVA\",\"json\":{\"name\":\"John\", \"age\":30, \"address\":{\"city\":\"New York\",\"country\":\"USA\"}},\"name\":\"John\", \"age\":30,\"address\":{\"city\":\"New York\", \"country\":\"USA\"}}";
+let json3 = "{\"array\":[1,2,3,4,12,2,[1,2,3,{\"json\":{\"value\":39,\"key\":123}, \"name\":\"Andrei\"}],4],\"json\":{\"name\":\"John\", \"age\":30, \"address\":{\"city\":\"New York\",\"country\":\"USA\"}},\"name\":\"John\", \"age\":30,\"address\":{\"city\":\"New York\", \"country\":\"USA\"}}";
 console.log(Parser.ParseObject(json3),"\n");
 ValidateAndParse(json3);
 

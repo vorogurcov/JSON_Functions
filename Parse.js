@@ -38,6 +38,48 @@ const isValidJSON = (input) => {
 };
 
 const ParseObject = (json) => {
+    const parseArray = (str) => {
+        const values = [];
+        let buffer = "";
+        let inString = false;
+        let nestingLevel = 0;
+
+        for (let i = 1; i < str.length - 1; i++) {
+            const char = str[i];
+
+            if (char === '"' && str[i - 1] !== "\\") {
+                inString = !inString;
+            }
+
+            if (inString) {
+                buffer += char;
+                continue;
+            }
+
+            if (char === "[" || char === "{") {
+                nestingLevel++;
+            }
+
+            if (char === "]" || char === "}") {
+                nestingLevel--;
+            }
+
+            if (char === "," && nestingLevel === 0) {
+                values.push(parseValue(buffer.trim()));
+                buffer = "";
+                continue;
+            }
+
+            buffer += char;
+        }
+
+        if (buffer.trim().length > 0) {
+            values.push(parseValue(buffer.trim()));
+        }
+
+        return values;
+    };
+
     const parseValue = (str) => {
         str = str.trim();
 
@@ -55,6 +97,8 @@ const ParseObject = (json) => {
         if (str === "null") return null;
 
         if (str.startsWith("{") && str.endsWith("}")) return ParseObject(str);
+
+        if (str.startsWith("[") && str.endsWith("]")) return parseArray(str);
 
         throw new Error(`Неизвестный формат значения: ${str}`);
     };
@@ -99,10 +143,34 @@ const ParseObject = (json) => {
             continue;
         }
 
-        if (char === ":" && nestingLevel === 1) {
-            currentKey = buffer.trim().slice(1, -1);
-            buffer = "";
+        if (char === "[") {
+            if (nestingLevel > 0) {
+                buffer += char;
+            }
+            nestingLevel++;
             continue;
+        }
+
+        if (char === "]") {
+            nestingLevel--;
+            if (nestingLevel === 0) {
+                if (currentKey !== null) {
+                    tokens[currentKey] = parseArray(buffer);
+                    currentKey = null;
+                    buffer = "";
+                }
+            } else {
+                buffer += char;
+            }
+            continue;
+        }
+
+        if (char === ":") {
+            if (nestingLevel === 1 && currentKey === null) {
+                currentKey = buffer.trim().slice(1, -1);
+                buffer = "";
+                continue;
+            }
         }
 
         if (char === "," && nestingLevel === 1) {
@@ -117,5 +185,6 @@ const ParseObject = (json) => {
 
     return tokens;
 };
+
 
 module.exports = {ParseObject, isValidJSON};
