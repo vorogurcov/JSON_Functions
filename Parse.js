@@ -2,7 +2,7 @@ const isValidJSON = (input) => {
     if (typeof input !== "string" || input.trim() === "") return false;
 
     const validateString = (str) => {
-        return /^"([^"\\]|\\["\\/bfnrt]|\\u[0-9a-fA-F]{4})*"$/.test(str);
+        return /^"([^"\\]|\\["/\\bfnrt]|\\u[0-9a-fA-F]{4})*"$/.test(str);
     };
 
     const validateNumber = (num) => {
