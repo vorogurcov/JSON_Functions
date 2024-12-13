@@ -10,17 +10,24 @@ const stringifyObject = (obj) => {
         return String(obj);
     }
 
+    if (Array.isArray(obj)) {
+        const values = obj.map((item) => {
+            if (item === undefined || typeof item === 'function' || typeof item === 'symbol') return 'null';
+            return stringifyObject(item);
+        });
+        return `[${values.join(',')}]`;
+    }
+
     if (typeof obj === 'object') {
         const keys = Object.keys(obj);
         const keyValuePairs = keys.map((key) => {
-
-            if (obj[key] === undefined) return null;
-            return `${stringifyObject(key)}:${stringifyObject(obj[key])}`;
+            const value = obj[key];
+            if (value === undefined || typeof value === 'function' || typeof value === 'symbol') return null;
+            return `${stringifyObject(key)}:${stringifyObject(value)}`;
         }).filter(pair => pair !== null);
 
         return `{${keyValuePairs.join(',')}}`;
     }
-
 
     throw new Error('Unsupported type');
 };
