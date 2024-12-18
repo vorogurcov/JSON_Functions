@@ -94,3 +94,94 @@ test('',() =>{
 
     expect(stringify(obj)).toStrictEqual(json);
 })
+
+test('test stringify with replacer function', () => {
+    const obj = {
+        key: 'value',
+        ignoredKey: 'ignored'
+    };
+
+    const replacer = (key, value) => {
+        if (key === 'ignoredKey') {
+            return undefined;
+        }
+        return value;
+    };
+
+    const json = JSON.stringify(obj, replacer);
+
+    expect(stringify(obj, replacer)).toStrictEqual(json);
+});
+
+test('test stringify with replacer array', () => {
+    const obj = {
+        key: 'value',
+        ignoredKey: 'ignored'
+    };
+
+    const replacer = ['key'];
+
+    const json = JSON.stringify(obj, replacer);
+
+    expect(stringify(obj, replacer)).toStrictEqual(json);
+});
+
+test('test stringify with space parameter', () => {
+    const obj = {
+        key1: 'value1',
+        key2: 'value2'
+    };
+
+    const json = JSON.stringify(obj, null, 2);
+
+    expect(stringify(obj, null, 2)).toStrictEqual(json);
+});
+
+test('test stringify with replacer function and space', () => {
+    const obj = {
+        key1: 'value1',
+        key2: 'value2',
+        ignoredKey: 'ignored'
+    };
+
+    const replacer = (key, value) => {
+        if (key === 'ignoredKey') {
+            return undefined;
+        }
+        return value;
+    };
+
+    const json = JSON.stringify(obj, replacer);
+
+    expect(stringify(obj, replacer)).toStrictEqual(json);
+});
+
+test('test stringify with array and space', () => {
+    const arr = ['value1', 'value2', null, 42];
+
+    const json = JSON.stringify(arr, null, 2);
+
+    expect(stringify(arr, null, 2)).toStrictEqual(json);
+});
+
+test('test stringify with space parameter', () => {
+    const obj = {
+        key1: 'value1',
+        key2: 'value2'
+    };
+
+    const json = JSON.stringify(obj, null, 122);
+
+    expect(stringify(obj, null, 122)).toStrictEqual(json);
+});
+
+test('test stringify with space parameter as \'\n\'', () => {
+    const obj = {
+        key1: 'value1',
+        key2: 'value2'
+    };
+
+    const json = JSON.stringify(obj, null, '\n\n');
+
+    expect(stringify(obj, null, '\n\n')).toStrictEqual(json);
+});

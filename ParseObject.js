@@ -1,5 +1,6 @@
-const ParseObject = (json) => {
-    const parseArray = (str) => {
+const ParseObject = (json, receiver = (key, value, context) => value) => {
+    const applyReceiver = (key, value, context = {}) => receiver(key, value, context);
+    const parseArray = (str, context) => {
         const values = [];
         let buffer = "";
         let inString = false;
@@ -26,7 +27,7 @@ const ParseObject = (json) => {
             }
 
             if (char === "," && nestingLevel === 0) {
-                values.push(parseValue(buffer.trim()));
+                values.push(parseValue(buffer.trim(), values));
                 buffer = "";
                 continue;
             }
@@ -35,21 +36,26 @@ const ParseObject = (json) => {
         }
 
         if (buffer.trim().length > 0) {
-            values.push(parseValue(buffer.trim()));
+            values.push(parseValue(buffer.trim(), values));
         }
 
-        return values;
+        return values.map((value, index) => applyReceiver(index, value, context));
     };
 
-    const parseValue = (str) => {
+    const parseValue = (str, context) => {
         str = str.trim();
+
+        if (str === "NaN") {
+            return NaN;
+        }
 
         if (str.startsWith('"') && str.endsWith('"')) {
             return str.slice(1, -1);
         }
 
         if (!isNaN(str)) {
-            return parseFloat(str);
+            const num = parseFloat(str);
+            return isNaN(num) ? 'NaN' : num;
         }
 
         if (str === "true") return true;
@@ -57,15 +63,16 @@ const ParseObject = (json) => {
 
         if (str === "null") return null;
 
-        if (str.startsWith("{") && str.endsWith("}")) return ParseObject(str);
+        if (str.startsWith("{") && str.endsWith("}")) return ParseObject(str, receiver);
 
-        if (str.startsWith("[") && str.endsWith("]")) return parseArray(str);
+        if (str.startsWith("[") && str.endsWith("]")) return parseArray(str, context);
 
         throw new Error(`Неизвестный формат значения: ${str}`);
     };
 
-    if(json.startsWith("[") && json.endsWith("]"))
+    if (json.startsWith("[") && json.endsWith("]")) {
         return parseArray(json);
+    }
 
     const tokens = {};
     let currentKey = null;
@@ -97,7 +104,7 @@ const ParseObject = (json) => {
             nestingLevel--;
             if (nestingLevel === 0) {
                 if (currentKey !== null) {
-                    tokens[currentKey] = parseValue(buffer);
+                    tokens[currentKey] = applyReceiver(currentKey, parseValue(buffer, tokens), tokens);
                     currentKey = null;
                     buffer = "";
                 }
@@ -119,7 +126,7 @@ const ParseObject = (json) => {
             nestingLevel--;
             if (nestingLevel === 0) {
                 if (currentKey !== null) {
-                    tokens[currentKey] = parseArray(buffer);
+                    tokens[currentKey] = applyReceiver(currentKey, parseArray(buffer, tokens), tokens);
                     currentKey = null;
                     buffer = "";
                 }
@@ -138,7 +145,7 @@ const ParseObject = (json) => {
         }
 
         if (char === "," && nestingLevel === 1) {
-            tokens[currentKey] = parseValue(buffer);
+            tokens[currentKey] = applyReceiver(currentKey, parseValue(buffer, tokens), tokens);
             currentKey = null;
             buffer = "";
             continue;
@@ -149,5 +156,8 @@ const ParseObject = (json) => {
 
     return tokens;
 };
+
+
+
 
 module.exports = ParseObject;
