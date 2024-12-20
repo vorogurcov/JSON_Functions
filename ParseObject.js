@@ -1,6 +1,14 @@
-const ParseObject = (json, receiver = (key, value, context) => value) => {
-    const applyReceiver = (key, value, context = {}) => receiver(key, value, context);
-    const parseArray = (str, context) => {
+const ParseObject = (json, reviver = (key, value) => value, parentContext = null) => {
+    const applyReviver = (key, value) => {
+        if (key !== undefined) {
+            return reviver(key, value);
+        }
+        else
+            return reviver("",value)
+        return value;
+    };
+
+    const parseArray = (str, parentContext) => {
         const values = [];
         let buffer = "";
         let inString = false;
@@ -27,7 +35,7 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
             }
 
             if (char === "," && nestingLevel === 0) {
-                values.push(parseValue(buffer.trim(), values));
+                values.push(parseValue(buffer.trim(), { parent: parentContext, key: values.length, type: "array" }));
                 buffer = "";
                 continue;
             }
@@ -36,42 +44,49 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
         }
 
         if (buffer.trim().length > 0) {
-            values.push(parseValue(buffer.trim(), values));
+            values.push(parseValue(buffer.trim(), { parent: parentContext, key: values.length, type: "array" }));
         }
 
-        return values.map((value, index) => applyReceiver(index, value, context));
+        return applyReviver(parentContext?.key, values);
     };
 
-    const parseValue = (str, context) => {
+    const parseValue = (str, parentContext) => {
         str = str.trim();
 
         if (str === "NaN") {
-            return NaN;
+            return applyReviver(parentContext?.key, NaN);
         }
 
         if (str.startsWith('"') && str.endsWith('"')) {
-            return str.slice(1, -1);
+            return applyReviver(parentContext?.key, str.slice(1, -1));
         }
 
         if (!isNaN(str)) {
             const num = parseFloat(str);
-            return isNaN(num) ? 'NaN' : num;
+            return applyReviver(parentContext?.key, isNaN(num) ? "NaN" : num);
         }
 
-        if (str === "true") return true;
-        if (str === "false") return false;
+        if (str === "true" || str === "false") {
+            return applyReviver(parentContext?.key, str === "true");
+        }
 
-        if (str === "null") return null;
+        if (str === "null") {
+            return applyReviver(parentContext?.key, null);
+        }
 
-        if (str.startsWith("{") && str.endsWith("}")) return ParseObject(str, receiver);
+        if (str.startsWith("{") && str.endsWith("}")) {
+            return ParseObject(str, reviver, { parent: parentContext, type: "object", key: parentContext?.key });
+        }
 
-        if (str.startsWith("[") && str.endsWith("]")) return parseArray(str, context);
+        if (str.startsWith("[") && str.endsWith("]")) {
+            return parseArray(str, { parent: parentContext, type: "array", key: parentContext?.key });
+        }
 
-        throw new Error(`Неизвестный формат значения: ${str}`);
+        throw new Error(`Unknown value format: ${str}`);
     };
 
     if (json.startsWith("[") && json.endsWith("]")) {
-        return parseArray(json);
+        return parseArray(json,null);
     }
 
     const tokens = {};
@@ -104,7 +119,7 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
             nestingLevel--;
             if (nestingLevel === 0) {
                 if (currentKey !== null) {
-                    tokens[currentKey] = applyReceiver(currentKey, parseValue(buffer, tokens), tokens);
+                    tokens[currentKey] = parseValue(buffer.trim(), { parent: tokens, key: currentKey, type: "object" });
                     currentKey = null;
                     buffer = "";
                 }
@@ -126,7 +141,7 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
             nestingLevel--;
             if (nestingLevel === 0) {
                 if (currentKey !== null) {
-                    tokens[currentKey] = applyReceiver(currentKey, parseArray(buffer, tokens), tokens);
+                    tokens[currentKey] = parseArray(buffer.trim(), { parent: tokens, key: currentKey });
                     currentKey = null;
                     buffer = "";
                 }
@@ -145,7 +160,7 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
         }
 
         if (char === "," && nestingLevel === 1) {
-            tokens[currentKey] = applyReceiver(currentKey, parseValue(buffer, tokens), tokens);
+            tokens[currentKey] = parseValue(buffer.trim(), { parent: tokens, key: currentKey, type: "object" });
             currentKey = null;
             buffer = "";
             continue;
@@ -154,10 +169,7 @@ const ParseObject = (json, receiver = (key, value, context) => value) => {
         buffer += char;
     }
 
-    return tokens;
+    return applyReviver(parentContext?.key, tokens);
 };
-
-
-
 
 module.exports = ParseObject;
